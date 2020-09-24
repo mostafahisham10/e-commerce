@@ -1,0 +1,175 @@
+{% extends 'main.html' %}
+{% load static %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-6">
+        <div class="box-element" id="form-wrapper">
+            <form id="form">
+                <div id="user-info">
+                    <div class="form-field">
+                        <input required class="form-control" type="text" name="name" placeholder="Name..">
+                    </div>
+                    <div class="form-field">
+                        <input required class="form-control" type="text" name="email" placeholder="Email..">
+                    </div>
+                </div>
+                <hr>
+                <div id="shipping-info">
+                    <p>Shipping Information</p>
+                    <hr>
+                    <div class="form-field">
+                        <input class="form-control" type="text" name="address" placeholder="Adress..">
+                    </div>
+                    <div class="form-field">
+                        <input class="form-control" type="text" name="city" placeholder="City..">
+                    </div>
+                    <div class="form-field">
+                        <input class="form-control" type="text" name="state" placeholder="State..">
+                    </div>
+                    <div class="form-field">
+                        <input class="form-control" type="text" name="zipcode" placeholder="Zipcode..">
+                    </div>
+                    <div class="form-field">
+                        <input class="form-control" type="text" name="country" placeholder="Country..">
+                    </div>
+                </div>
+                <hr>
+                <input id="form-button" class="btn btn-success btn-block" type="submit" value="Continue">
+            </form>
+        </div>
+        <br>
+        <div class="box-element hidden" id="payment-info">
+            <strong>Paypal Options</strong>
+            <button class="btn btn-success" id="make-payment">Make payment</button>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="box-element">
+            <a class="btn btn-outline-dark" href="{% url 'cart' %}">&#x2190; Back to Cart</a>
+            <hr>
+            <h3>Order Summary</h3>
+            <div class="table-responsive">
+                <table class="table">
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td width="33%"><img class="row-image" src="{{item.product.image.url}}"></td>
+                            <td width="33%">
+                                <p>{{item.product.name}}</p>
+                            </td>
+                            <td width="17%">
+                                <p>${{item.product.price}}</p>
+                            </td>
+                            <td width="17%">
+                                <p>x{{item.quantity}}</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <h5>Items: {{order.get_cart_items}}</h5>
+            <h5>Total: ${{order.get_cart_total}}</h5>
+        </div>
+    </div>
+</div>
+
+<script>
+    const shipping = "{{order.shipping}}";
+
+    if (shipping == "False") {
+        // Hide shipping form if item doesn't require shipping
+        document.querySelector("#shipping-info").innerHTML = "";
+    }
+
+    if (user != "AnonymousUser") {
+        // Hide user info form of user is signed in
+        document.querySelector("#user-info").innerHTML = "";
+    }
+
+    if (shipping == 'False' && user != 'AnonymousUser') {
+        //Hide entire form if user is logged in and shipping is false
+        document.querySelector("#form-wrapper").classList.add("hidden");
+        //Show payment if logged in user wants to buy an item that does not require shipping
+        document.querySelector("#payment-info").classList.remove("hidden");
+    }
+
+
+    // Remove continue button and show payment section
+    const form = document.querySelector("#form");
+
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        document.querySelector("#form-button").classList.add("hidden");
+        document.querySelector("#payment-info").classList.remove("hidden");
+    })
+
+
+    const payment_button = document.querySelector("#make-payment");
+
+    payment_button.addEventListener("click", function (e) {
+        sumbitFormData();
+    })
+
+    const total = "{{order.get_cart_total}}";
+
+    // Query form data
+    function sumbitFormData() {
+        console.log("payment button clicked");
+
+        const userFormData = {
+            "name": null,
+            "email": null,
+            "total": total,
+        }
+
+        const shippingInfo = {
+            "address": null,
+            "city": null,
+            "state": null,
+            "zipcode": null,
+            "country": null,
+        }
+
+        if (user == "AnonymousUser") {
+            userFormData.name = form.name.value;
+            userFormData.email = form.email.value;
+        }
+
+        if (shipping != "False") {
+            shippingInfo.address = form.address.value;
+            shippingInfo.city = form.city.value;
+            shippingInfo.state = form.state.value;
+            shippingInfo.zipcode = form.zipcode.value;
+            shippingInfo.country = form.country.value;
+        }
+
+        console.log("user info:", userFormData);
+        console.log("shipping info:", shippingInfo);
+
+        const url = "/process-order/";
+
+        fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrftoken
+            },
+            body: JSON.stringify({
+                "form": userFormData,
+                "shipping": shippingInfo
+            })
+        })
+
+            .then((response) => response.json())
+
+            .then((data) => {
+                console.log(`Data: ${data}`);
+                alert ("Transaction was completer");
+                window.location.href = "{% url 'store' %}";
+            })
+    }
+</script>
+
+<!-- <script src="{% static 'js/checkout.js' %}"></script> -->
+{% endblock content %}

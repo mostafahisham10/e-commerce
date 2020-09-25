@@ -18,7 +18,7 @@
                     <p>Shipping Information</p>
                     <hr>
                     <div class="form-field">
-                        <input class="form-control" type="text" name="address" placeholder="Adress..">
+                        <input class="form-control" type="text" name="address" placeholder="Address..">
                     </div>
                     <div class="form-field">
                         <input class="form-control" type="text" name="city" placeholder="City..">
@@ -39,8 +39,7 @@
         </div>
         <br>
         <div class="box-element hidden" id="payment-info">
-            <strong>Paypal Options</strong>
-            <button class="btn btn-success" id="make-payment">Make payment</button>
+            <div id="paypal-button-container"></div>
         </div>
     </div>
     <div class="col-lg-6">
@@ -74,6 +73,41 @@
     </div>
 </div>
 
+<!-- Include the PayPal JavaScript SDK -->
+<script
+    src="https://www.paypal.com/sdk/js?client-id=AaFF5-yaXCU5Cf-eostInNl921bHFi8d4oBa5FTeG194w5R2MFYMzQ_JS1capLu7eN2oIB0M_4qAuH17&currency=USD"></script>
+
+<script>
+    const total = "{{order.get_cart_total}}";
+
+    // Render the PayPal button into #paypal-button-container
+    paypal.Buttons({
+        style: {
+            label: 'pay',
+            shape: 'pill'
+        },
+
+        // Set up the transaction
+        createOrder: function (data, actions) {
+            return actions.order.create({
+                purchase_units: [{
+                    amount: {
+                        value: parseFloat(total).toFixed(2)
+                    }
+                }]
+            });
+        },
+
+        // Finalize the transaction
+        onApprove: function (data, actions) {
+            return actions.order.capture().then(function (details) {
+                sumbitFormData();
+            });
+        }
+
+    }).render('#paypal-button-container');
+</script>
+
 <script>
     const shipping = "{{order.shipping}}";
 
@@ -104,18 +138,9 @@
         document.querySelector("#payment-info").classList.remove("hidden");
     })
 
-
-    const payment_button = document.querySelector("#make-payment");
-
-    payment_button.addEventListener("click", function (e) {
-        sumbitFormData();
-    })
-
-    const total = "{{order.get_cart_total}}";
-
     // Query form data
     function sumbitFormData() {
-        
+
         const userFormData = {
             "name": null,
             "email": null,
@@ -164,7 +189,7 @@
 
             .then((data) => {
                 console.log(`Data: ${data}`);
-                alert ("Transaction was completed");
+                alert("Transaction was completed");
                 window.location.href = "{% url 'store' %}";
             })
     }

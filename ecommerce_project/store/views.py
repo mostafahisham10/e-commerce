@@ -7,6 +7,7 @@ from rest_framework.authentication import SessionAuthentication, BasicAuthentica
 from rest_framework.permissions import IsAuthenticated
 from .models import Customer, Product, Order, OrderItem, ShippingAddress
 from .serializers import ProductSerializer
+from .utils import query_data
 import datetime
 
 
@@ -14,18 +15,9 @@ class Store(TemplateView):
     template_name = "store/index.html"
 
     def get_context_data(self, **kwargs):
-        if self.request.user.is_authenticated:
-            customer = self.request.user.customer
-        else:
-            device = self.request.COOKIES["device"]
-            customer, created = Customer.objects.get_or_create(device=device)
-
-        order, created = Order.objects.get_or_create(
-            customer=customer, complete=False)
-        items = order.orderitem_set.all()
-        cartItems = order.get_cart_items
+        data_list = query_data(self)
         products = Product.objects.all()
-        context = {"products": products, "cartItems": cartItems}
+        context = {"products": products, "cartItems": data_list["cartItems"]}
         return context
 
 
@@ -33,17 +25,9 @@ class Cart(TemplateView):
     template_name = "store/cart.html"
 
     def get_context_data(self, **kwargs):
-        if self.request.user.is_authenticated:
-            customer = self.request.user.customer
-        else:
-            device = self.request.COOKIES["device"]
-            customer, created = Customer.objects.get_or_create(device=device)
-
-        order, created = Order.objects.get_or_create(
-            customer=customer, complete=False)
-        items = order.orderitem_set.all()
-        cartItems = order.get_cart_items
-        context = {"items": items, "order": order, "cartItems": cartItems}
+        data_list = query_data(self)
+        context = {"order": data_list["order"],
+                   "items": data_list["items"], "cartItems": data_list["cartItems"]}
         return context
 
 
@@ -51,17 +35,9 @@ class Checkout(TemplateView):
     template_name = "store/checkout.html"
 
     def get_context_data(self, **kwargs):
-        if self.request.user.is_authenticated:
-            customer = self.request.user.customer
-        else:
-            device = self.request.COOKIES["device"]
-            customer, created = Customer.objects.get_or_create(device=device)
-
-        order, created = Order.objects.get_or_create(
-            customer=customer, complete=False)
-        items = order.orderitem_set.all()
-        cartItems = order.get_cart_items
-        context = {"items": items, "order": order, "cartItems": cartItems}
+        data_list = query_data(self)
+        context = {"order": data_list["order"],
+                   "items": data_list["items"], "cartItems": data_list["cartItems"]}
         return context
 
 
@@ -72,8 +48,8 @@ class UpdateItem(APIView):
         productId = data["productId"]
         action = data["action"]
 
-        if request.user.is_authenticated:          
-            customer = request.user.customer           
+        if request.user.is_authenticated:
+            customer = request.user.customer
         else:
             device = request.COOKIES["device"]
             customer, created = Customer.objects.get_or_create(device=device)

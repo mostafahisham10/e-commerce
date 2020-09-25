@@ -115,8 +115,7 @@
 
     // Query form data
     function sumbitFormData() {
-        console.log("payment button clicked");
-
+        
         const userFormData = {
             "name": null,
             "email": null,
@@ -165,7 +164,7 @@
 
             .then((data) => {
                 console.log(`Data: ${data}`);
-                alert ("Transaction was completer");
+                alert ("Transaction was completed");
                 window.location.href = "{% url 'store' %}";
             })
     }

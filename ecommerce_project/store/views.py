@@ -16,16 +16,14 @@ class Store(TemplateView):
     def get_context_data(self, **kwargs):
         if self.request.user.is_authenticated:
             customer = self.request.user.customer
-            order, created = Order.objects.get_or_create(
-                customer=customer, complete=False)
-            items = order.orderitem_set.all()
-            cartItems = order.get_cart_items
         else:
-            items = []
-            order = {"get_cart_total": 0,
-                     "get_cart_items": 0, "shipping": False}
-            cartItems = order["get_cart_items"]
+            device = self.request.COOKIES["device"]
+            customer, created = Customer.objects.get_or_create(device=device)
 
+        order, created = Order.objects.get_or_create(
+            customer=customer, complete=False)
+        items = order.orderitem_set.all()
+        cartItems = order.get_cart_items
         products = Product.objects.all()
         context = {"products": products, "cartItems": cartItems}
         return context
@@ -37,15 +35,14 @@ class Cart(TemplateView):
     def get_context_data(self, **kwargs):
         if self.request.user.is_authenticated:
             customer = self.request.user.customer
-            order, created = Order.objects.get_or_create(
-                customer=customer, complete=False)
-            items = order.orderitem_set.all()
-            cartItems = order.get_cart_items
         else:
-            items = []
-            order = {"get_cart_total": 0,
-                     "get_cart_items": 0, "shipping": False}
-            cartItems = order["get_cart_items"]
+            device = self.request.COOKIES["device"]
+            customer, created = Customer.objects.get_or_create(device=device)
+
+        order, created = Order.objects.get_or_create(
+            customer=customer, complete=False)
+        items = order.orderitem_set.all()
+        cartItems = order.get_cart_items
         context = {"items": items, "order": order, "cartItems": cartItems}
         return context
 
@@ -56,15 +53,14 @@ class Checkout(TemplateView):
     def get_context_data(self, **kwargs):
         if self.request.user.is_authenticated:
             customer = self.request.user.customer
-            order, created = Order.objects.get_or_create(
-                customer=customer, complete=False)
-            items = order.orderitem_set.all()
-            cartItems = order.get_cart_items
         else:
-            items = []
-            order = {"get_cart_total": 0,
-                     "get_cart_items": 0, "shipping": False}
-            cartItems = order["get_cart_items"]
+            device = self.request.COOKIES["device"]
+            customer, created = Customer.objects.get_or_create(device=device)
+
+        order, created = Order.objects.get_or_create(
+            customer=customer, complete=False)
+        items = order.orderitem_set.all()
+        cartItems = order.get_cart_items
         context = {"items": items, "order": order, "cartItems": cartItems}
         return context
 
@@ -76,10 +72,12 @@ class UpdateItem(APIView):
         productId = data["productId"]
         action = data["action"]
 
-        print("productId: ", productId)
-        print("action: ", action)
+        if request.user.is_authenticated:          
+            customer = request.user.customer           
+        else:
+            device = request.COOKIES["device"]
+            customer, created = Customer.objects.get_or_create(device=device)
 
-        customer = request.user.customer
         product = Product.objects.get(id=productId)
         order, created = Order.objects.get_or_create(
             customer=customer, complete=False)
@@ -106,28 +104,33 @@ class ProcessOrder(APIView):
 
         if request.user.is_authenticated:
             customer = request.user.customer
-            order, created = Order.objects.get_or_create(
-                customer=customer, complete=False)
-            total = float(data["form"]["total"])
-            order.transaction_id = transaction_id
-
-            if total == float(order.get_cart_total):
-                order.complete = True
-
-            order.save()
-
-            if order.shipping == True:
-                ShippingAddress.objects.create(
-                    customer=customer,
-                    order=order,
-                    address=data["shipping"]["address"],
-                    city=data["shipping"]["city"],
-                    state=data["shipping"]["state"],
-                    zipcode=data["shipping"]["zipcode"],
-                    country=data["shipping"]["country"]
-                )
         else:
-            print("user is not logged in")
+            device = request.COOKIES["device"]
+            customer, created = Customer.objects.get_or_create(device=device)
+            customer.name = data["form"]["name"]
+            customer.email = data["form"]["email"]
+            customer.save()
+
+        order, created = Order.objects.get_or_create(
+            customer=customer, complete=False)
+        total = float(data["form"]["total"])
+        order.transaction_id = transaction_id
+
+        if total == float(order.get_cart_total):
+            order.complete = True
+
+        order.save()
+
+        if order.shipping == True:
+            ShippingAddress.objects.create(
+                customer=customer,
+                order=order,
+                address=data["shipping"]["address"],
+                city=data["shipping"]["city"],
+                state=data["shipping"]["state"],
+                zipcode=data["shipping"]["zipcode"],
+                country=data["shipping"]["country"]
+            )
 
         return Response("order was processed")
 

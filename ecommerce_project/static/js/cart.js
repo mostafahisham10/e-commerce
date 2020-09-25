@@ -39,25 +39,3 @@ function updateUserOrder(productId, action) {
             location.reload();
         })
 }
-
-
-// function changePrice(productId, action) {
-//     console.log(`${user} is logged in, sending data..`);
-
-//     const url = `api/product-update/${productId}/`;
-
-//     fetch(url, {
-//         method: "POST",
-//         headers: {
-//             "Content-Type": "application/json",
-//             "X-CSRFToken": csrftoken
-//         },
-//         body: JSON.stringify({
-//             "price": 179.99
-//         })
-//     })
-
-//         .then((response) => response.json())
-
-//         .then((data) => console.log(`Data: ${data}`))
-// }
